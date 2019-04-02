@@ -9,7 +9,7 @@
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2018-04-14 12:00:32"
+	"lastUpdated": "2018-09-05 18:02:02"
 }
 
 /**
@@ -90,6 +90,25 @@ function scrape(doc, url) {
 	for (var i=0; i<topics.length; i++) {
 		item.tags.push(topics[i].textContent.trim());
 	}
+	
+	// Get the branch and the file with the citation.
+	var branch = ZU.xpath(doc, "/html/body/div[4]/div/div/div[2]/div[1]/div[4]/div[1]/button/span");
+	item.branch = branch[0].textContent.trim();
+	var rawUrl = item.url + "/raw/" + item.branch + "/";
+	//https://github.com/pherterich/chicken-egg-cffhackday/raw/<branch>/.zenodo.json
+	var file_xpath =ZU.xpath(doc, '/html/body/div[4]/div/div/div[2]/div[1]/div[6]/table/tbody/tr[*]/td[2]');
+	for (var i=0; i<file_xpath.length; i++){
+		if (file_xpath[i].textContent.trim() == ".zenodo.json"){
+		item.mine = "great!";
+		item.rawurl = rawUrl + ".zenodo.json";
+		ZU.doGet(item.rawurl, function(result) {
+			var json = JSON.parse(result);			
+			for (var j=0; j<json.creators.length; j++){
+				item.creators.push(ZU.cleanAuthor(json.creators[j].name, "programmer"));
+			}
+			return;
+		})}
+	}
 
 	item.rights = ZU.xpathText(doc, '//a[*[contains(@class, "octicon-law")]]');
 	
@@ -103,7 +122,6 @@ function scrape(doc, url) {
 			item.complete();
 			return;
 		}
-		var name = json.name;
 		var owner = json.owner.login;
 		
 		item.programmingLanguage = json.language;
@@ -114,7 +132,7 @@ function scrape(doc, url) {
 			var jsonUser = JSON.parse(user);
 			var ownerName = jsonUser.name || jsonUser.login;
 			if (jsonUser.type == "User") {
-				item.creators.push(ZU.cleanAuthor(ownerName, "programmer"));
+				//item.creators.push(ZU.cleanAuthor(ownerName, "programmer"));
 			} else {
 				item.company = ownerName;
 			}
@@ -130,18 +148,11 @@ function scrape(doc, url) {
 
 // get the full name from the author profile page
 function getAuthor(username) {
-	var url = "https://github.com/" + encodeURIComponent(username);	
-	ZU.processDocuments(url, function(text) {
-		var author = ZU.xpathText(text, '//span[contains(@class, "vcard-fullname")]');
-		if (!author) { author = ZU.xpathText(text, '//span[contains(@class, "vcard-username")]'); }
-		if (!author) { author = ZU.xpathText(text, '/html/head/meta[@property="profile:username"]/@content'); }
-		Z.debug(author);
-		author = ZU.cleanAuthor(author, "author");
-	});
+	var file_xpath =ZU.xpath(doc, '/html/body/div[4]/div/div/div[2]/div[1]/div[6]/table/tbody/tr[*]/td[2]');
+	alert(file_xpath);
 	// temporary, until we get the author string out of the closure
-	return ZU.cleanAuthor(username, "author");
+	return 0;
 }
-
 /** BEGIN TEST CASES **/
 var testCases = [
 	{
